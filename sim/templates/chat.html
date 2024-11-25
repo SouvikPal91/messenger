@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', sans-serif;
+            background-color: #f0f8ff;
+            margin: 0;
+            padding: 0;
+            color: #333;
+            overflow-x: hidden;
+            background: url('https://www.w3schools.com/w3images/forestbridge.jpg') no-repeat center center fixed;
+            background-size: cover;
+        }
+
+        .header {
+            background-color: rgba(255, 111, 97, 0.8);
+            color: white;
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin: 0;
+            font-weight: bold;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: rgba(255, 255, 255, 0.85); /* Slight opacity */
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .messages {
+            flex-grow: 1;
+            padding: 15px;
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+            border-radius: 10px;
+            overflow-y: scroll;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+        }
+
+        .message {
+            background-color: #ffffff;
+            border-radius: 12px;
+            margin: 10px 0;
+            padding: 15px;
+            max-width: 75%;
+            font-size: 16px;
+            line-height: 1.5;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .message-author {
+            font-weight: bold;
+            color: #ff6f61;
+            margin-bottom: 5px;
+        }
+
+        .message-content {
+            font-size: 14px;
+        }
+
+        .message-incoming {
+            background-color: #d1f7d3;
+            align-self: flex-start;
+        }
+
+        .message-outgoing {
+            background-color: #ffddc1;
+            align-self: flex-end;
+        }
+
+        textarea {
+            width: 80%;
+            height: 80px; /* Adjust height to fit within the container */
+            padding: 15px;
+            font-size: 16px;
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            resize: none;
+            outline: none;
+            background-color: #f3f4f7;
+            transition: background-color 0.3s;
+            margin-bottom: 10px;
+        }
+
+        textarea:focus {
+            background-color: #fff7f1;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #ff6f61;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s ease-in-out, background-color 0.3s ease;
+            align-self: flex-end;
+        }
+
+        button:hover {
+            background-color: #ff4d39;
+            transform: scale(1.1);
+        }
+
+        .return-lobby {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .return-lobby button {
+            padding: 12px 25px;
+            background-color: #007bff;
+            color: white;
+            border-radius: 50px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        .return-lobby button:hover {
+            background-color: #0056b3;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>Welcome {{ request.session.username }}</h1>
+</div>
+
+<div class="container">
+    <div class="messages" id="sse-data">
+        <!-- Messages will load dynamically here -->
+    </div>
+
+    <form id="chat-form" method="post" action="/create-message/" onsubmit="return submitMessage(event)">
+        {% csrf_token %}
+        <textarea name="content" id="message-content" placeholder="Type your message..." required></textarea>
+        <button type="submit">Send</button>
+    </form>
+</div>
+
+<div class="return-lobby">
+    <form action="/lobby/" method="get">
+        <button type="submit">Return to Lobby</button>
+    </form>
+</div>
+
+<script>
+    // Initialize SSE connection for receiving messages
+    let eventSource;
+    const sseData = document.getElementById('sse-data');
+    let lastSentMessage = ''; // Store the last sent message content
+
+    function startSSE() {
+        eventSource = new EventSource('/stream-chat-messages/');
+        eventSource.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+
+            // Only display server messages (not the one you just sent)
+            if (data.author__name !== 'You') {
+                const messageHTML = `
+                    <div class="message message-incoming">
+                        <div class="message-author">${data.author__name}</div>
+                        <div class="message-content">${data.content}</div>
+                    </div>`;
+                sseData.innerHTML += messageHTML;
+                sseData.scrollTop = sseData.scrollHeight; // Auto-scroll to the latest message
+            }
+        };
+    }
+
+    if (typeof(EventSource) !== 'undefined') {
+        startSSE();
+    } else {
+        sseData.innerHTML = 'Your browser does not support Server-Sent Events.';
+    }
+
+    // Submit message via fetch and reset the form
+    function submitMessage(event) {
+        event.preventDefault();  // Prevent default form submission
+        const form = document.getElementById('chat-form');
+        const content = document.getElementById('message-content').value;
+
+        const formData = new FormData(form);
+
+        // Prevent sending an empty message
+        if (!content.trim()) {
+            return;
+        }
+
+        fetch('/create-message/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('input[name="csrfmiddlewaretoken"]').value,
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to send message');
+            }
+
+            // Display the outgoing message only after it is successfully sent
+            const messageHTML = `
+                <div class="message message-outgoing">
+                    <div class="message-author">You</div>
+                    <div class="message-content">${content}</div>
+                </div>`;
+            sseData.innerHTML += messageHTML;
+            sseData.scrollTop = sseData.scrollHeight; // Auto-scroll to the latest message
+
+            // Store the message content to avoid duplicate display in SSE
+            lastSentMessage = content;
+
+            document.getElementById('message-content').value = '';  // Clear textarea after message is sent
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+</script>
+
+</body>
+</html>

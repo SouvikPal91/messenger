@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign-in Page</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: #333;
+            background: url('https://www.w3schools.com/w3images/forestbridge.jpg') no-repeat center center fixed;
+            background-size: cover;
+        }
+
+        .sign-in-container {
+            background: rgba(255, 255, 255, 0.8); /* semi-transparent background */
+            padding: 40px 50px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            width: 300px;
+            text-align: center;
+        }
+
+        .sign-in-container h2 {
+            font-size: 24px;
+            color: #ff6f61;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+
+        .sign-in-container form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sign-in-container input {
+            margin-bottom: 15px;
+            padding: 15px;
+            border: 1px solid #ced6e0;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border 0.3s;
+        }
+
+        .sign-in-container input:focus {
+            border: 1px solid #ff6f61;
+            outline: none;
+        }
+
+        .sign-in-container button {
+            padding: 15px;
+            background-color: #ff6f61;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        .sign-in-container button:hover {
+            background-color: #ff4d39;
+        }
+
+        .footer {
+            position: absolute;
+            bottom: 10px;
+            font-size: 12px;
+            color: white;
+            text-align: center;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="sign-in-container">
+        <h2>Enter your chat name:</h2>
+        <form method="post">
+            {% csrf_token %}
+            <input type="text" name="username" placeholder="Username" required>
+            <button type="submit">Join the chat</button>
+        </form>
+    </div>
+
+    <div class="footer">
+        <p>&copy; 2024 Instant Messenger. All rights reserved.</p>
+    </div>
+</body>
+</html>
